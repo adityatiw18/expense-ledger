@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: expense-ledger-db
+
+    environment:
+      POSTGRES_DB: expense_ledger
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d expense_ledger"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: expense-ledger-api
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/expense_ledger
+
+  frontend:
+    build: ./frontend
+    container_name: expense-ledger-frontend
+
+    depends_on:
+      - api
+
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:
